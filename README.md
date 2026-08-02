@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PostGrid MCP
 
-## Getting Started
+Standalone Vercel-native [Model Context Protocol](https://modelcontextprotocol.io) server for **read-only PostGrid Print & Mail** access. It exposes a small set of constrained tools over PostGrid's live API. No database, no external services beyond PostGrid itself.
 
-First, run the development server:
+Designed for **Claude Cowork** custom connectors (OAuth Individual sign-in).
+
+## What this is (and is not)
+
+| This MCP | PostGrid hosted MCP (`postgrid.readme.io/mcp`) |
+| --- | --- |
+| Constrained read-only tools | Arbitrary API executor |
+| Server-held PostGrid key + Cowork OAuth | Pass-your-key patterns |
+
+**Non-goals (v1):** send/cancel mail, Address Verification, arbitrary raw GET, pricing/commission logic, data persistence.
+
+## Tools
+
+- `postgrid_ping`
+- `postgrid_list_sub_orgs`
+- `postgrid_schema_probe`
+
+## Quick start (local)
+
+```bash
+npm install
+cp .env.example .env.local
+# fill OAUTH_TOKEN_SECRET, OPERATOR_PASSWORD, POSTGRID_API_KEY
+npm run dev
+```
+
+- App: `http://localhost:3000`
+- MCP: `http://localhost:3000/api/mcp`
+
+## Claude Cowork connect
+
+1. Deploy to Vercel and set env vars from `.env.example` (`PUBLIC_BASE_URL`, `MCP_ALLOWED_HOSTS`, secrets).
+2. In Claude Cowork: **Settings → Connectors → Add custom connector**
+3. **Remote MCP server URL:** `https://<your-deployment>/api/mcp`
+4. Leave OAuth Client ID / Secret blank (CIMD). Enable **Individual sign-in**.
+5. Click **Connect** → sign in with `OPERATOR_USERNAME` / `OPERATOR_PASSWORD`.
+6. Enable the connector in a Cowork conversation and run `postgrid_ping`.
+
+Callback used by Claude: `https://claude.ai/api/mcp/auth_callback`.
+
+## Security
+
+- OAuth access tokens are HMAC-signed; MCP route returns `401` + `WWW-Authenticate` when unauthenticated.
+- PostGrid key never leaves the server.
+- Sub-org impersonation can be constrained with `POSTGRID_ALLOWED_ORG_IDS`.
+- Signed URLs are redacted before responses/logs.
+- PostGrid list calls are throttled in-process (about 10/min per instance) to respect PostGrid's GET List rate limit.
+
+See [SECURITY.md](SECURITY.md).
+
+## Scripts
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run typecheck
+npm test
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## License
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT (see [LICENSE](LICENSE)). Keep private rate cards and customer data out of this repository.

@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+        env:
+          # Build does not need live secrets; routes are dynamic.
+          OAUTH_TOKEN_SECRET: ci-build-secret-at-least-32-characters
+          OPERATOR_PASSWORD: ci-password
+          POSTGRID_API_KEY: test_ci
+          POSTGRID_ENVIRONMENT: test
+          PUBLIC_BASE_URL: https://example.vercel.app
+          MCP_ALLOWED_HOSTS: example.vercel.app
